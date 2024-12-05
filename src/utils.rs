@@ -13,11 +13,11 @@ use zenoh::{
 pub(crate) struct CliArgs {
     /* zcat config */
     /// The list of key expressions to read from zenoh and to write to stdout
-    #[arg(short, long)]
+    #[arg(short, long, group("action"), required(true))]
     read: Vec<String>,
 
     /// The list of key expressions to read from stdin and to write to zenoh
-    #[arg(short, long)]
+    #[arg(short, long, group("action"), required(true))]
     write: Vec<PubParams>,
 
     /// The buffer size to read on
