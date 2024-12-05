@@ -2,6 +2,10 @@
 name = "zcat"
 version = "0.1.0"
 edition = "2021"
+authors = ["Luca Cominardi <luca.cominardi@zettascale.tech>"]
+license = "EPL-2.0"
+categories = ["network-programming"]
+description = "zcat: a netcat alternative for zenoh"
 
 [dependencies]
 clap = { version = "4.5.22", features = ["derive"] }
