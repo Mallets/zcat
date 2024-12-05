@@ -41,11 +41,7 @@ zat -r foo/bar
 
 ### QoS parameters
 
-The QoS parameters of zenoh publications can be configured via command line per every key expression:
-
-```
-<keyexpr>:<drop|block>?:<priority>?:<true|false>?
-```
+The QoS parameters of zenoh publications can be configured via command line.
 
 To change the reliability:
 ```sh
