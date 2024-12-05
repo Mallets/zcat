@@ -14,29 +14,32 @@ pub(crate) struct CliArgs {
     /* zcat config */
     /// The list of key expressions to read from zenoh and to write to stdout
     #[arg(short, long, group("action"), required(true))]
-    read: Vec<String>,
+    read: Option<String>,
 
     /// The list of key expressions to read from stdin and to write to zenoh
     #[arg(short, long, group("action"), required(true))]
-    write: Vec<PubParams>,
+    write: Option<String>,
+
+    #[arg(short = 't', long, requires("write"))]
+    #[clap(value_parser(["reliable", "besteffort"]))]
+    reliability: Option<String>,
+
+    #[arg(short = 'd', long, requires("write"))]
+    #[clap(value_parser(["drop", "block"]))]
+    congestion_control: Option<String>,
+
+    #[arg(short, long, requires("write"))]
+    #[clap(value_parser(["1", "2", "3", "4", "5", "6", "7"]))]
+    priority: Option<String>,
+
+    #[arg(short, long, requires("write"))]
+    express: bool,
 
     /// The buffer size to read on
     #[arg(short, long, default_value = "32768")]
     buffer: Vec<String>,
 
     /* Zenoh config */
-    /// A configuration file.
-    #[arg(short, long)]
-    config: Option<PathBuf>,
-
-    /// Allows arbitrary configuration changes as column-separated KEY:VALUE pairs, where:
-    ///   - KEY must be a valid config path.
-    ///   - VALUE must be a valid JSON5 string that can be deserialized to the expected type for the KEY field.
-    ///
-    /// Example: `--cfg='transport/unicast/max_links:2'`
-    #[arg(long)]
-    cfg: Vec<String>,
-
     /// The Zenoh session mode [default: peer].
     #[arg(short, long)]
     mode: Option<WhatAmI>,
@@ -52,19 +55,53 @@ pub(crate) struct CliArgs {
     #[arg(long)]
     /// Disable the multicast-based scouting mechanism.
     no_multicast_scouting: bool,
+
+    /// A configuration file.
+    #[arg(short, long)]
+    config: Option<PathBuf>,
+
+    /// Allows arbitrary configuration changes as column-separated KEY:VALUE pairs, where:
+    ///   - KEY must be a valid config path.
+    ///   - VALUE must be a valid JSON5 string that can be deserialized to the expected type for the KEY field.
+    ///
+    /// Example: `--cfg='transport/unicast/max_links:2'`
+    #[arg(long)]
+    cfg: Vec<String>,
 }
 
 impl CliArgs {
-    pub(crate) fn read(&self) -> Vec<KeyExpr<'static>> {
-        self.read
-            .iter()
-            .cloned()
-            .map(|s| KeyExpr::try_from(s).unwrap())
-            .collect()
+    pub(crate) fn read(&self) -> Option<KeyExpr<'static>> {
+        self.read.clone().map(|s| KeyExpr::try_from(s).unwrap())
     }
 
-    pub(crate) fn write(&self) -> Vec<PubParams> {
-        self.write.clone()
+    pub(crate) fn write(&self) -> Option<PubParams> {
+        self.write.clone().map(|s| PubParams {
+            keyexpr: KeyExpr::try_from(s).unwrap(),
+            reliability: self
+                .reliability
+                .clone()
+                .map(|s| match s.as_str() {
+                    "reliable" => Reliability::Reliable,
+                    "besteffort" => Reliability::BestEffort,
+                    _ => unreachable!(),
+                })
+                .unwrap_or_default(),
+            congestion_control: self
+                .congestion_control
+                .clone()
+                .map(|s| match s.as_str() {
+                    "drop" => CongestionControl::Drop,
+                    "block" => CongestionControl::Block,
+                    _ => unreachable!(),
+                })
+                .unwrap_or_default(),
+            priority: self
+                .priority
+                .clone()
+                .map(|s| Priority::try_from(s.parse::<u8>().unwrap()).unwrap())
+                .unwrap_or_default(),
+            express: self.express,
+        })
     }
 
     pub(crate) fn config(&self) -> Config {

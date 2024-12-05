@@ -49,22 +49,22 @@ The QoS parameters of zenoh publications can be configured via command line per 
 
 To change the reliability:
 ```sh
-echo "Hello World" | zat -w foo/bar:besteffort
+echo "Hello World" | zat -w foo/bar -t besteffort
 ```
 
 To change the reliability and the congestion control:
 ```sh
-echo "Hello World" | zat -w foo/bar:besteffort:drop
+echo "Hello World" | zat -w foo/bar -t besteffort -d drop
 ```
 
 To change the reliability, the congestion control and the priority:
 ```sh
-echo "Hello World" | zat -w foo/bar:besteffort:drop:6
+echo "Hello World" | zat -w foo/bar -t besteffort -d drop -p 6
 ```
 
 To change the reliability, the congestion control, the priority, and the express flag:
 ```sh
-echo "Hello World" | zat -w foo/bar:besteffort:drop:6:true
+echo "Hello World" | zat -w foo/bar -t besteffort -d drop -p 6 -e
 ```
 
 ### Custom Zenoh Configuration
