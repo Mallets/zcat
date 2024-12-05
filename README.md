@@ -18,6 +18,8 @@ cargo install zcat
 
 ## Usage
 
+Because `zcat` as command name is already be used for the [zcat Linux command](https://linux.die.net/man/1/zcat), this crate uses `zat` as command name.
+
 See `zat --help` for all available options.
 
 ### Getting started
