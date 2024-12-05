@@ -1,14 +1,34 @@
 use serde_json::json;
-use std::path::PathBuf;
-use zenoh::key_expr::KeyExpr;
-use zenoh::{config::WhatAmI, Config};
+use std::{path::PathBuf, str::FromStr};
+use zenoh::{
+    config::{Config, WhatAmI},
+    key_expr::KeyExpr,
+    qos::{CongestionControl, Priority},
+};
 
+/********************/
+/*     Config       */
+/********************/
 #[derive(clap::Parser, Debug)]
 pub(crate) struct CliArgs {
+    /* zcat config */
+    /// The list of key expressions to read from zenoh and to write to stdout
     #[arg(short, long)]
+    read: Vec<String>,
+
+    /// The list of key expressions to read from stdin and to write to zenoh
+    #[arg(short, long)]
+    write: Vec<PubParams>,
+
+    /// The buffer size to read on
+    #[arg(short, long, default_value = "32768")]
+    buffer: Vec<String>,
+
+    /* Zenoh config */
     /// A configuration file.
+    #[arg(short, long)]
     config: Option<PathBuf>,
-    #[arg(long)]
+
     /// Allows arbitrary configuration changes as column-separated KEY:VALUE pairs, where:
     ///   - KEY must be a valid config path.
     ///   - VALUE must be a valid JSON5 string that can be deserialized to the expected type for the KEY field.
@@ -16,24 +36,22 @@ pub(crate) struct CliArgs {
     /// Example: `--cfg='transport/unicast/max_links:2'`
     #[arg(long)]
     cfg: Vec<String>,
-    #[arg(short, long)]
+
     /// The Zenoh session mode [default: peer].
-    mode: Option<WhatAmI>,
-    #[arg(short = 'e', long)]
-    /// Endpoints to connect to.
-    connect: Vec<String>,
     #[arg(short, long)]
+    mode: Option<WhatAmI>,
+
+    /// Endpoints to connect to.
+    #[arg(short = 'e', long)]
+    connect: Vec<String>,
+
     /// Endpoints to listen on.
+    #[arg(short, long)]
     listen: Vec<String>,
+
     #[arg(long)]
     /// Disable the multicast-based scouting mechanism.
     no_multicast_scouting: bool,
-    // The list of key expressions to read from zenoh and to write to stdout
-    #[arg(short, long)]
-    read: Vec<String>,
-    #[arg(short, long)]
-    // The list of key expressions to read from stdin and to write to zenoh
-    write: Vec<String>,
 }
 
 impl CliArgs {
@@ -45,12 +63,8 @@ impl CliArgs {
             .collect()
     }
 
-    pub(crate) fn write(&self) -> Vec<KeyExpr<'static>> {
-        self.write
-            .iter()
-            .cloned()
-            .map(|s| KeyExpr::try_from(s).unwrap())
-            .collect()
+    pub(crate) fn write(&self) -> Vec<PubParams> {
+        self.write.clone()
     }
 
     pub(crate) fn config(&self) -> Config {
@@ -91,5 +105,67 @@ impl CliArgs {
             }
         }
         config
+    }
+}
+
+/********************/
+/*    PubParams     */
+/********************/
+#[derive(Clone, Debug)]
+pub(crate) struct PubParams {
+    pub keyexpr: KeyExpr<'static>,
+    pub congestion_control: CongestionControl,
+    pub priority: Priority,
+    pub express: bool,
+}
+
+impl FromStr for PubParams {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Format:
+        // - <keyexpr>:<drop|block>:<priority as u8>:<true|false>
+        // - foo/bar:drop:5:false
+        let mut iter = s.split(':');
+
+        let Some(ke) = iter.next() else {
+            return Err("KeyExpr must be provided".to_string());
+        };
+        let keyexpr = KeyExpr::try_from(ke.to_string()).map_err(|e| format!("{}", e))?;
+
+        let congestion_control: CongestionControl = match iter.next() {
+            Some("drop") => CongestionControl::Drop,
+            Some("block") => CongestionControl::Block,
+            Some(p) => {
+                return Err(format!(
+                    "Invalid congestion control value: {p}. Valid values are: 'drop' or 'block'."
+                ));
+            }
+            None => CongestionControl::default(),
+        };
+
+        let priority: Priority = match iter.next() {
+            Some(p) => {
+                let i: u8 = p.parse().map_err(|e| format!("{}", e))?;
+                i.try_into().map_err(|e| format!("{}", e))?
+            }
+            None => Priority::default(),
+        };
+
+        let express: bool = match iter.next() {
+            Some(p) => p.parse().map_err(|e| format!("{}", e))?,
+            None => false,
+        };
+
+        if iter.next().is_some() {
+            return Err("Too many parameters".to_string());
+        }
+
+        Ok(Self {
+            keyexpr,
+            congestion_control,
+            priority,
+            express,
+        })
     }
 }
