@@ -3,7 +3,7 @@ use std::{path::PathBuf, str::FromStr};
 use zenoh::{
     config::{Config, WhatAmI},
     key_expr::KeyExpr,
-    qos::{CongestionControl, Priority},
+    qos::{CongestionControl, Priority, Reliability},
 };
 
 /********************/
@@ -114,6 +114,7 @@ impl CliArgs {
 #[derive(Clone, Debug)]
 pub(crate) struct PubParams {
     pub keyexpr: KeyExpr<'static>,
+    pub reliability: Reliability,
     pub congestion_control: CongestionControl,
     pub priority: Priority,
     pub express: bool,
@@ -124,7 +125,7 @@ impl FromStr for PubParams {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Format:
-        // - <keyexpr>:<drop|block>:<priority as u8>:<true|false>
+        // - <keyexpr>:<reliable|besteffort>:<drop|block>:<priority as u8>:<true|false>
         // - foo/bar:drop:5:false
         let mut iter = s.split(':');
 
@@ -132,6 +133,17 @@ impl FromStr for PubParams {
             return Err("KeyExpr must be provided".to_string());
         };
         let keyexpr = KeyExpr::try_from(ke.to_string()).map_err(|e| format!("{}", e))?;
+
+        let reliability: Reliability = match iter.next() {
+            Some("reliable") => Reliability::Reliable,
+            Some("besteffort") => Reliability::BestEffort,
+            Some(p) => {
+                return Err(format!(
+                    "Invalid reliability value: {p}. Valid values are: 'reliable' or 'besteffort'."
+                ));
+            }
+            None => Reliability::default(),
+        };
 
         let congestion_control: CongestionControl = match iter.next() {
             Some("drop") => CongestionControl::Drop,
@@ -163,6 +175,7 @@ impl FromStr for PubParams {
 
         Ok(Self {
             keyexpr,
+            reliability,
             congestion_control,
             priority,
             express,

@@ -45,19 +45,24 @@ The QoS parameters of zenoh publications can be configured via command line per 
 <keyexpr>:<drop|block>?:<priority>?:<true|false>?
 ```
 
-To change the congestion control:
+To change the reliability:
 ```sh
-echo "Hello World" | zcat -w foo/bar:drop
+echo "Hello World" | zcat -w foo/bar:besteffort
 ```
 
-To change the congestion control and the priority:
+To change the reliability and the congestion control:
 ```sh
-echo "Hello World" | zcat -w foo/bar:drop:6
+echo "Hello World" | zcat -w foo/bar:besteffort:drop
 ```
 
-To change the congestion control, the priority, and the express flag:
+To change the reliability, the congestion control and the priority:
 ```sh
-echo "Hello World" | zcat -w foo/bar:drop:6:true
+echo "Hello World" | zcat -w foo/bar:besteffort:drop:6
+```
+
+To change the reliability, the congestion control, the priority, and the express flag:
+```sh
+echo "Hello World" | zcat -w foo/bar:besteffort:drop:6:true
 ```
 
 ### Custom Zenoh Configuration

@@ -1,6 +1,6 @@
 [package]
 name = "zcat"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Luca Cominardi <luca.cominardi@zettascale.tech>"]
 license = "EPL-2.0"
@@ -11,4 +11,4 @@ repository = "https://github.com/Mallets/zcat"
 [dependencies]
 clap = { version = "4.5.22", features = ["derive"] }
 serde_json = "1.0.133"
-zenoh = "1.0.3"
+zenoh = { version = "1.0.3", features = ["unstable"] }

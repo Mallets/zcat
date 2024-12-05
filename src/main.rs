@@ -32,6 +32,7 @@ fn main() {
         .drain(..)
         .map(|w| {
             s.declare_publisher(w.keyexpr)
+                .reliability(w.reliability)
                 .congestion_control(w.congestion_control)
                 .priority(w.priority)
                 .express(w.express)
