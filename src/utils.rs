@@ -11,7 +11,7 @@ use zenoh::{
 /********************/
 #[derive(clap::Parser, Debug)]
 pub(crate) struct CliArgs {
-    /* zcat config */
+    /* zat config */
     /// The list of key expressions to read from zenoh and to write to stdout
     #[arg(short, long)]
     read: Vec<String>,

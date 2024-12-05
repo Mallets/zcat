@@ -1,40 +1,40 @@
-# zcat - the zenoh cat
+# zat - the zenoh cat
 
-`zcat` mimics [netcat](https://sectools.org/tool/netcat/) with the difference that communication occurs via [zenoh](https://github.com/eclipse-zenoh/zenoh) instead of plain TCP or UDP.
+`zat` mimics [netcat](https://sectools.org/tool/netcat/) with the difference that communication occurs via [zenoh](https://github.com/eclipse-zenoh/zenoh) instead of plain TCP or UDP.
 
-`zcat` allows to read and write data across networks from the command line.
+`zat` allows to read and write data across networks from the command line.
 
 ## Prerequisites
 
-`zcat` is written in Rust and requires the [Rust toolchain](https://www.rust-lang.org/tools/install) to be installed on your system to build it.
+`zat` is written in Rust and requires the [Rust toolchain](https://www.rust-lang.org/tools/install) to be installed on your system to build it.
 
 ## Installation
 
-Install the `zcat` command using `cargo`. 
+Install the `zat` command using `cargo`. 
 
 ```sh
-cargo install zcat
+cargo install zat
 ```
 
 ## Usage
 
-See `zcat --help` for all available options.
+See `zat --help` for all available options.
 
 ### Getting started
 
-`zcat` runs in publicatoin or subscription mode when proper flags are
+`zat` runs in publicatoin or subscription mode when proper flags are
 specified.
 
 To read data from stdin and publish it over zenoh:
 
 ```sh
-echo "Hello World" | zcat -w foo/bar
+echo "Hello World" | zat -w foo/bar
 ```
 
 To subscribe to data from zenoh and write it to stdout:
 
 ```sh
-zcat -r foo/bar
+zat -r foo/bar
 ```
 
 ### QoS parameters
@@ -47,22 +47,22 @@ The QoS parameters of zenoh publications can be configured via command line per 
 
 To change the reliability:
 ```sh
-echo "Hello World" | zcat -w foo/bar:besteffort
+echo "Hello World" | zat -w foo/bar:besteffort
 ```
 
 To change the reliability and the congestion control:
 ```sh
-echo "Hello World" | zcat -w foo/bar:besteffort:drop
+echo "Hello World" | zat -w foo/bar:besteffort:drop
 ```
 
 To change the reliability, the congestion control and the priority:
 ```sh
-echo "Hello World" | zcat -w foo/bar:besteffort:drop:6
+echo "Hello World" | zat -w foo/bar:besteffort:drop:6
 ```
 
 To change the reliability, the congestion control, the priority, and the express flag:
 ```sh
-echo "Hello World" | zcat -w foo/bar:besteffort:drop:6:true
+echo "Hello World" | zat -w foo/bar:besteffort:drop:6:true
 ```
 
 ### Custom Zenoh Configuration
@@ -70,22 +70,22 @@ echo "Hello World" | zcat -w foo/bar:besteffort:drop:6:true
 A zenoh configuration file can be provided in the command line.
 
 ```sh
-zcat --config config.json5 -w foo/bar
+zat --config config.json5 -w foo/bar
 ```
 
 To listen for incoming connections:
 
 ```sh
-zcat -l tcp/127.0.0.1:6777 -w foo/bar
+zat -l tcp/127.0.0.1:6777 -w foo/bar
 ```
 
 To establish a connection:
 
 ```sh
-zcat -e tcp/127.0.0.1:7447 -w foo/bar
+zat -e tcp/127.0.0.1:7447 -w foo/bar
 ```
 
-More Zenoh options can be discovered by `zcat --help`.
+More Zenoh options can be discovered by `zat --help`.
 
 ## License
 
