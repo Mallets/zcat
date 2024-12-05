@@ -1,19 +1,19 @@
 # zat - the zenoh cat
 
-`zat` mimics [netcat](https://sectools.org/tool/netcat/) with the difference that communication occurs via [zenoh](https://github.com/eclipse-zenoh/zenoh) instead of plain TCP or UDP.
+`zcat` mimics [netcat](https://sectools.org/tool/netcat/) with the difference that communication occurs via [zenoh](https://github.com/eclipse-zenoh/zenoh) instead of plain TCP or UDP.
 
-`zat` allows to read and write data across networks from the command line.
+`zcat` allows to read and write data across networks from the command line.
 
 ## Prerequisites
 
-`zat` is written in Rust and requires the [Rust toolchain](https://www.rust-lang.org/tools/install) to be installed on your system to build it.
+`zcat` is written in Rust and requires the [Rust toolchain](https://www.rust-lang.org/tools/install) to be installed on your system to build it.
 
 ## Installation
 
-Install the `zat` command using `cargo`. 
+Install the `zcat` command using `cargo`. 
 
 ```sh
-cargo install zat
+cargo install zcat
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ See `zat --help` for all available options.
 
 ### Getting started
 
-`zat` runs in publicatoin or subscription mode when proper flags are
+`zcat` runs in publicatoin or subscription mode when proper flags are
 specified.
 
 To read data from stdin and publish it over zenoh:
