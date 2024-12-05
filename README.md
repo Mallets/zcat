@@ -1,4 +1,4 @@
-# zat - the zenoh cat
+# zcat - the zenoh cat
 
 `zcat` mimics [netcat](https://sectools.org/tool/netcat/) with the difference that communication occurs via [zenoh](https://github.com/eclipse-zenoh/zenoh) instead of plain TCP or UDP.
 

@@ -1,6 +1,6 @@
 [package]
 name = "zcat"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 authors = ["Luca Cominardi <luca.cominardi@zettascale.tech>"]
 license = "EPL-2.0"
