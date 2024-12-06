@@ -1,5 +1,5 @@
 use serde_json::json;
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 use zenoh::{
     config::{Config, WhatAmI},
     key_expr::KeyExpr,
@@ -9,35 +9,46 @@ use zenoh::{
 /********************/
 /*     Config       */
 /********************/
+#[derive(clap::Subcommand, Clone, Debug)]
+enum CliCommand {
+    #[clap(short_flag = 'r')]
+    Read {
+        keyexpr: String,
+
+        #[arg(short = 'i', long)]
+        ignore_eof: bool,
+    },
+    #[clap(short_flag = 'w')]
+    Write {
+        keyexpr: String,
+
+        #[arg(short = 't', long)]
+        #[clap(value_parser(["reliable", "besteffort"]))]
+        reliability: Option<String>,
+
+        #[arg(short = 'd', long)]
+        #[clap(value_parser(["drop", "block"]))]
+        congestion_control: Option<String>,
+
+        #[arg(short, long)]
+        #[clap(value_parser(["1", "2", "3", "4", "5", "6", "7"]))]
+        priority: Option<u8>,
+
+        #[arg(short, long)]
+        express: bool,
+
+        /// The buffer size to read on
+        #[arg(short, long, default_value = "32768")]
+        buffer: usize,
+    },
+}
+
 #[derive(clap::Parser, Debug)]
 pub(crate) struct CliArgs {
     /* zcat config */
     /// The list of key expressions to read from zenoh and to write to stdout
-    #[arg(short, long, group("action"), required(true))]
-    read: Option<String>,
-
-    /// The list of key expressions to read from stdin and to write to zenoh
-    #[arg(short, long, group("action"), required(true))]
-    write: Option<String>,
-
-    #[arg(short = 't', long, requires("write"))]
-    #[clap(value_parser(["reliable", "besteffort"]))]
-    reliability: Option<String>,
-
-    #[arg(short = 'd', long, requires("write"))]
-    #[clap(value_parser(["drop", "block"]))]
-    congestion_control: Option<String>,
-
-    #[arg(short, long, requires("write"))]
-    #[clap(value_parser(["1", "2", "3", "4", "5", "6", "7"]))]
-    priority: Option<String>,
-
-    #[arg(short, long, requires("write"))]
-    express: bool,
-
-    /// The buffer size to read on
-    #[arg(short, long, default_value = "32768")]
-    buffer: Vec<String>,
+    #[command(subcommand)]
+    command: CliCommand,
 
     /* Zenoh config */
     /// The Zenoh session mode [default: peer].
@@ -70,38 +81,48 @@ pub(crate) struct CliArgs {
 }
 
 impl CliArgs {
-    pub(crate) fn read(&self) -> Option<KeyExpr<'static>> {
-        self.read.clone().map(|s| KeyExpr::try_from(s).unwrap())
-    }
-
-    pub(crate) fn write(&self) -> Option<PubParams> {
-        self.write.clone().map(|s| PubParams {
-            keyexpr: KeyExpr::try_from(s).unwrap(),
-            reliability: self
-                .reliability
-                .clone()
-                .map(|s| match s.as_str() {
-                    "reliable" => Reliability::Reliable,
-                    "besteffort" => Reliability::BestEffort,
-                    _ => unreachable!(),
-                })
-                .unwrap_or_default(),
-            congestion_control: self
-                .congestion_control
-                .clone()
-                .map(|s| match s.as_str() {
-                    "drop" => CongestionControl::Drop,
-                    "block" => CongestionControl::Block,
-                    _ => unreachable!(),
-                })
-                .unwrap_or_default(),
-            priority: self
-                .priority
-                .clone()
-                .map(|s| Priority::try_from(s.parse::<u8>().unwrap()).unwrap())
-                .unwrap_or_default(),
-            express: self.express,
-        })
+    pub(crate) fn params(&self) -> Params {
+        match &self.command {
+            CliCommand::Read {
+                keyexpr,
+                ignore_eof,
+            } => Params::Read(SubParams {
+                keyexpr: KeyExpr::try_from(keyexpr.to_string()).unwrap(),
+                ignore_eof: *ignore_eof,
+            }),
+            CliCommand::Write {
+                keyexpr,
+                reliability,
+                congestion_control,
+                priority,
+                express,
+                buffer,
+            } => Params::Write(PubParams {
+                keyexpr: KeyExpr::try_from(keyexpr.to_string()).unwrap(),
+                reliability: reliability
+                    .as_ref()
+                    .map(|s| match s.as_str() {
+                        "reliable" => Reliability::Reliable,
+                        "besteffort" => Reliability::BestEffort,
+                        _ => unreachable!(),
+                    })
+                    .unwrap_or_default(),
+                congestion_control: congestion_control
+                    .as_ref()
+                    .map(|s| match s.as_str() {
+                        "drop" => CongestionControl::Drop,
+                        "block" => CongestionControl::Block,
+                        _ => unreachable!(),
+                    })
+                    .unwrap_or_default(),
+                priority: priority
+                    .as_ref()
+                    .map(|s| Priority::try_from(*s).unwrap())
+                    .unwrap_or_default(),
+                express: *express,
+                buffer: *buffer,
+            }),
+        }
     }
 
     pub(crate) fn config(&self) -> Config {
@@ -146,76 +167,25 @@ impl CliArgs {
 }
 
 /********************/
-/*    PubParams     */
+/*    PSubParams    */
 /********************/
-#[derive(Clone, Debug)]
-pub(crate) struct PubParams {
-    pub keyexpr: KeyExpr<'static>,
-    pub reliability: Reliability,
-    pub congestion_control: CongestionControl,
-    pub priority: Priority,
-    pub express: bool,
+pub(crate) enum Params {
+    Write(PubParams),
+    Read(SubParams),
 }
 
-impl FromStr for PubParams {
-    type Err = String;
+#[derive(Clone, Debug)]
+pub(crate) struct PubParams {
+    pub(crate) keyexpr: KeyExpr<'static>,
+    pub(crate) reliability: Reliability,
+    pub(crate) congestion_control: CongestionControl,
+    pub(crate) priority: Priority,
+    pub(crate) express: bool,
+    pub(crate) buffer: usize,
+}
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Format:
-        // - <keyexpr>:<reliable|besteffort>:<drop|block>:<priority as u8>:<true|false>
-        // - foo/bar:drop:5:false
-        let mut iter = s.split(':');
-
-        let Some(ke) = iter.next() else {
-            return Err("KeyExpr must be provided".to_string());
-        };
-        let keyexpr = KeyExpr::try_from(ke.to_string()).map_err(|e| format!("{}", e))?;
-
-        let reliability: Reliability = match iter.next() {
-            Some("reliable") => Reliability::Reliable,
-            Some("besteffort") => Reliability::BestEffort,
-            Some(p) => {
-                return Err(format!(
-                    "Invalid reliability value: {p}. Valid values are: 'reliable' or 'besteffort'."
-                ));
-            }
-            None => Reliability::default(),
-        };
-
-        let congestion_control: CongestionControl = match iter.next() {
-            Some("drop") => CongestionControl::Drop,
-            Some("block") => CongestionControl::Block,
-            Some(p) => {
-                return Err(format!(
-                    "Invalid congestion control value: {p}. Valid values are: 'drop' or 'block'."
-                ));
-            }
-            None => CongestionControl::default(),
-        };
-
-        let priority: Priority = match iter.next() {
-            Some(p) => {
-                let i: u8 = p.parse().map_err(|e| format!("{}", e))?;
-                i.try_into().map_err(|e| format!("{}", e))?
-            }
-            None => Priority::default(),
-        };
-
-        let express: bool = match iter.next() {
-            Some(p) => p.parse().map_err(|e| format!("{}", e))?,
-            None => false,
-        };
-
-        if iter.next().is_some() {
-            return Err("Too many parameters".to_string());
-        }
-
-        Ok(Self {
-            keyexpr,
-            reliability,
-            congestion_control,
-            priority,
-            express,
-        })
-    }
+#[derive(Clone, Debug)]
+pub(crate) struct SubParams {
+    pub(crate) keyexpr: KeyExpr<'static>,
+    pub(crate) ignore_eof: bool,
 }
