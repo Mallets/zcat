@@ -11,32 +11,35 @@ use zenoh::{
 /********************/
 #[derive(clap::Subcommand, Clone, Debug)]
 enum CliCommand {
+    /// Read from zenoh and write to stdout
     #[clap(short_flag = 'r')]
     Read {
+        /// The zenoh key expression to read from
         keyexpr: String,
-
+        /// Do not exit on EOF
         #[arg(short = 'i', long)]
         ignore_eof: bool,
     },
+    /// Read from stdin and write to zenoh
     #[clap(short_flag = 'w')]
     Write {
+        /// The zenoh key expression to write on
         keyexpr: String,
-
+        /// The zenoh reliability to use for writing
         #[arg(short = 't', long)]
         #[clap(value_parser(["reliable", "besteffort"]))]
         reliability: Option<String>,
-
+        /// The zenoh congestion control to use for writing
         #[arg(short = 'd', long)]
         #[clap(value_parser(["drop", "block"]))]
         congestion_control: Option<String>,
-
+        /// The zenoh priority to use for writing
         #[arg(short, long)]
         #[clap(value_parser(["1", "2", "3", "4", "5", "6", "7"]))]
         priority: Option<u8>,
-
+        /// The zenoh express flag to use for writing
         #[arg(short, long)]
         express: bool,
-
         /// The buffer size to read on
         #[arg(short, long, default_value = "32768")]
         buffer: usize,
@@ -44,38 +47,42 @@ enum CliCommand {
 }
 
 #[derive(clap::Parser, Debug)]
+#[command(
+    help_template = "{about} (v{version})\n\n{before-help}{usage-heading} {usage}\n\n{all-args} {tab} {after-help}",
+    about,
+    version,
+    before_long_help = "\
+Example:
+$ zat -r zenoh/cat
+$ echo \"Meow\" | zat -w zenoh/cat"
+)]
 pub(crate) struct CliArgs {
     /* zcat config */
-    /// The list of key expressions to read from zenoh and to write to stdout
     #[command(subcommand)]
     command: CliCommand,
 
     /* Zenoh config */
-    /// The Zenoh session mode [default: peer].
+    /// The Zenoh session mode [default: "peer"]
     #[arg(short, long)]
     mode: Option<WhatAmI>,
 
-    /// Endpoints to connect to.
+    /// Endpoints to connect to
     #[arg(short = 'e', long)]
     connect: Vec<String>,
 
-    /// Endpoints to listen on.
+    /// Endpoints to listen on
     #[arg(short, long)]
     listen: Vec<String>,
 
     #[arg(long)]
-    /// Disable the multicast-based scouting mechanism.
+    /// Disable the multicast-based scouting mechanism
     no_multicast_scouting: bool,
 
     /// A configuration file.
     #[arg(short, long)]
     config: Option<PathBuf>,
 
-    /// Allows arbitrary configuration changes as column-separated KEY:VALUE pairs, where:
-    ///   - KEY must be a valid config path.
-    ///   - VALUE must be a valid JSON5 string that can be deserialized to the expected type for the KEY field.
-    ///
-    /// Example: `--cfg='transport/unicast/max_links:2'`
+    /// Allows arbitrary configuration changes as column-separated KEY:VALUE pairs
     #[arg(long)]
     cfg: Vec<String>,
 }
