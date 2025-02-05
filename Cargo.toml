@@ -14,7 +14,7 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 clap = { version = "4.5.22", features = ["derive", "help"] }
 serde_json = "1.0.133"
-zenoh = { version = "1.0.4", features = ["unstable"] }
+zenoh = { version = "1.2.1", features = ["unstable"] }
 
 [[bin]]
 name = "zat"
